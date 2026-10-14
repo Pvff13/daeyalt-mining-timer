@@ -1,4 +1,4 @@
-package com.betterdaeyalttimers;
+package com.daeyaltminingtimer;
 
 import javax.inject.Inject;
 import net.runelite.api.Client;
@@ -15,22 +15,22 @@ import net.runelite.client.util.ColorUtil;
 
 import java.awt.*;
 
-public class BetterDaeyaltTimersOverlay extends Overlay {
+public class DaeyaltMiningTimerOverlay extends Overlay {
     private static final int Z_OFFSET = 200;
 
     private static final int MIN_DESPAWN_TICK = 92;
     private static final int MAX_DESPAWN_TICK = 110;
 
     private final Client client;
-    private final BetterDaeyaltTimersPlugin plugin;
-    private final BetterDaeyaltTimersConfig config;
+    private final DaeyaltMiningTimerPlugin plugin;
+    private final DaeyaltMiningTimerConfig config;
     private final SkillIconManager skillIconManager;
 
     private Font countdownFont;
     private int countdownFontSize = -1;
 
     @Inject
-    private BetterDaeyaltTimersOverlay(Client client, BetterDaeyaltTimersPlugin plugin, BetterDaeyaltTimersConfig config, SkillIconManager skillIconManager)
+    private DaeyaltMiningTimerOverlay(Client client, DaeyaltMiningTimerPlugin plugin, DaeyaltMiningTimerConfig config, SkillIconManager skillIconManager)
     {
         this.client = client;
         this.plugin = plugin;
@@ -90,7 +90,7 @@ public class BetterDaeyaltTimersOverlay extends Overlay {
 
             var style = config.timerStyle();
 
-            if (style != BetterDaeyaltTimersConfig.TimerStyle.COUNTDOWN)
+            if (style != DaeyaltMiningTimerConfig.TimerStyle.COUNTDOWN)
             {
                 var pie = new ProgressPieComponent();
                 pie.setPosition(position);
@@ -101,12 +101,12 @@ public class BetterDaeyaltTimersOverlay extends Overlay {
                 pie.render(graphics);
             }
 
-            if (style != BetterDaeyaltTimersConfig.TimerStyle.PIE)
+            if (style != DaeyaltMiningTimerConfig.TimerStyle.PIE)
             {
                 // Count down to the earliest possible move, then to the latest once it can move.
                 var remainingTicks = Math.max(0, (canMove ? MAX_DESPAWN_TICK : MIN_DESPAWN_TICK) - spawnedTicks);
                 var text = formatCountdown(remainingTicks);
-                var textColour = style == BetterDaeyaltTimersConfig.TimerStyle.COUNTDOWN ? colour : config.countdownTextColour();
+                var textColour = style == DaeyaltMiningTimerConfig.TimerStyle.COUNTDOWN ? colour : config.countdownTextColour();
                 renderCentredText(graphics, text, position, textColour);
             }
         }
@@ -116,7 +116,7 @@ public class BetterDaeyaltTimersOverlay extends Overlay {
 
     private String formatCountdown(int ticks)
     {
-        if (config.timerUnit() == BetterDaeyaltTimersConfig.TimerUnit.TICKS)
+        if (config.timerUnit() == DaeyaltMiningTimerConfig.TimerUnit.TICKS)
             return Integer.toString(ticks);
 
         return String.format("%.1f", ticks * Constants.GAME_TICK_LENGTH / 1000.0);

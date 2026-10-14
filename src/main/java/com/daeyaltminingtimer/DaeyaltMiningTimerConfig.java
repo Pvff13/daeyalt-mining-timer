@@ -1,14 +1,14 @@
-package com.betterdaeyalttimers;
+package com.daeyaltminingtimer;
 
 import java.awt.Color;
 
 import net.runelite.api.SoundEffectID;
 import net.runelite.client.config.*;
 
-@ConfigGroup(BetterDaeyaltTimersConfig.group)
-public interface BetterDaeyaltTimersConfig extends Config
+@ConfigGroup(DaeyaltMiningTimerConfig.group)
+public interface DaeyaltMiningTimerConfig extends Config
 {
-	String group = "better-daeyalt-timers";
+	String group = "daeyalt-mining-timer";
 
 	enum TimerStyle
 	{

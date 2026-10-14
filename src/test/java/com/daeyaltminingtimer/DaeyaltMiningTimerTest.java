@@ -1,13 +1,13 @@
-package com.betterdaeyalttimers;
+package com.daeyaltminingtimer;
 
 import net.runelite.client.RuneLite;
 import net.runelite.client.externalplugins.ExternalPluginManager;
 
-public class BetterDaeyaltTimersTest
+public class DaeyaltMiningTimerTest
 {
 	public static void main(String[] args) throws Exception
 	{
-		ExternalPluginManager.loadBuiltin(BetterDaeyaltTimersPlugin.class);
+		ExternalPluginManager.loadBuiltin(DaeyaltMiningTimerPlugin.class);
 		RuneLite.main(args);
 	}
 }

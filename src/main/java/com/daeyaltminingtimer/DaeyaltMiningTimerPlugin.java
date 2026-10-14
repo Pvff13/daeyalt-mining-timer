@@ -1,4 +1,4 @@
-package com.betterdaeyalttimers;
+package com.daeyaltminingtimer;
 
 import com.google.inject.Provides;
 import java.awt.Color;
@@ -26,11 +26,11 @@ import net.runelite.client.util.ColorUtil;
 
 @Slf4j
 @PluginDescriptor(
-	name = "Better Daeyalt Timers",
+	name = "Daeyalt Mining Timer",
 	description = "Daeyalt essence timers with a countdown, mining-state colours and a resizable timer",
 	tags = {"daeyalt", "essence", "mine", "timer", "countdown"}
 )
-public class BetterDaeyaltTimersPlugin extends Plugin
+public class DaeyaltMiningTimerPlugin extends Plugin
 {
 	private static final int DAEYALT_ESSENCE_MINE_REGION_ID = 14744;
 
@@ -38,7 +38,7 @@ public class BetterDaeyaltTimersPlugin extends Plugin
 	private Client client;
 
 	@Inject
-	private BetterDaeyaltTimersConfig config;
+	private DaeyaltMiningTimerConfig config;
 
 	@Inject
 	private Notifier notifier;
@@ -47,7 +47,7 @@ public class BetterDaeyaltTimersPlugin extends Plugin
 	private OverlayManager overlayManager;
 
 	@Inject
-	private BetterDaeyaltTimersOverlay mine;
+	private DaeyaltMiningTimerOverlay mine;
 
 	@Getter
 	private GameObject activeDaeyaltEssence;
@@ -83,7 +83,7 @@ public class BetterDaeyaltTimersPlugin extends Plugin
 	@Subscribe
 	public void onConfigChanged(ConfigChanged event)
 	{
-		if (event.getGroup().equals(BetterDaeyaltTimersConfig.group))
+		if (event.getGroup().equals(DaeyaltMiningTimerConfig.group))
 			updateConfig();
 	}
 
@@ -224,9 +224,9 @@ public class BetterDaeyaltTimersPlugin extends Plugin
 	}
 
 	@Provides
-	BetterDaeyaltTimersConfig provideConfig(ConfigManager configManager)
+	DaeyaltMiningTimerConfig provideConfig(ConfigManager configManager)
 	{
-		return configManager.getConfig(BetterDaeyaltTimersConfig.class);
+		return configManager.getConfig(DaeyaltMiningTimerConfig.class);
 	}
 
 	public boolean outsideDaeyaltEssenceMine()

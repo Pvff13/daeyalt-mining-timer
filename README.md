@@ -1,4 +1,4 @@
-# Better Daeyalt Timers
+# Daeyalt Mining Timer
 Timers and notifications for the Daeyalt Essence mine.
 
 - Despawn timer as a pie, a countdown (seconds or ticks), or both
