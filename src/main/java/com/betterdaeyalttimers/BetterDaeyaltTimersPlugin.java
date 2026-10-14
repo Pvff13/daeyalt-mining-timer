@@ -1,0 +1,236 @@
+package com.betterdaeyalttimers;
+
+import com.google.inject.Provides;
+import java.awt.Color;
+import javax.inject.Inject;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.Client;
+import net.runelite.api.GameObject;
+import net.runelite.api.GameState;
+import net.runelite.api.coords.WorldArea;
+import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.events.GameObjectDespawned;
+import net.runelite.api.events.GameObjectSpawned;
+import net.runelite.api.events.GameStateChanged;
+import net.runelite.api.events.GameTick;
+import net.runelite.api.gameval.ObjectID;
+import net.runelite.client.Notifier;
+import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
+import net.runelite.client.ui.overlay.OverlayManager;
+import net.runelite.client.config.ConfigManager;
+import net.runelite.client.plugins.Plugin;
+import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.util.ColorUtil;
+
+@Slf4j
+@PluginDescriptor(
+	name = "Better Daeyalt Timers",
+	description = "Daeyalt essence timers with a countdown, mining-state colours and a resizable timer",
+	tags = {"daeyalt", "essence", "mine", "timer", "countdown"}
+)
+public class BetterDaeyaltTimersPlugin extends Plugin
+{
+	private static final int DAEYALT_ESSENCE_MINE_REGION_ID = 14744;
+
+	@Inject
+	private Client client;
+
+	@Inject
+	private BetterDaeyaltTimersConfig config;
+
+	@Inject
+	private Notifier notifier;
+
+	@Inject
+	private OverlayManager overlayManager;
+
+	@Inject
+	private BetterDaeyaltTimersOverlay mine;
+
+	@Getter
+	private GameObject activeDaeyaltEssence;
+	@Getter
+	private int activeDaeyaltEssenceSpawnTick = -1;
+
+	@Getter
+	private Color clickboxBorderColorMinable;
+	@Getter
+	private Color clickboxFillColorMinable;
+	@Getter
+	private Color clickboxBorderHoverColorMinable;
+
+	private boolean inDaeyaltEssenceMine = false;
+
+	// Mining animations loop with short gaps between swings; treat the player as
+	// still mining for this many ticks after the last animated tick.
+	private static final int MINING_GRACE_TICKS = 2;
+	private static final int MINING_DISTANCE = 2;
+
+	@Getter
+	private boolean mining;
+	private int lastMiningTick = -1;
+
+	@Override
+	protected void startUp() throws Exception
+	{
+		overlayManager.add(mine);
+
+		updateConfig();
+	}
+
+	@Subscribe
+	public void onConfigChanged(ConfigChanged event)
+	{
+		if (event.getGroup().equals(BetterDaeyaltTimersConfig.group))
+			updateConfig();
+	}
+
+	private void updateConfig()
+	{
+		clickboxBorderColorMinable = config.showDaeyaltEssenceClickboxAvailable();
+		clickboxFillColorMinable = ColorUtil.colorWithAlpha(clickboxBorderColorMinable, 50);
+		clickboxBorderHoverColorMinable = clickboxBorderColorMinable.darker();
+	}
+
+	Color getMiningStateColour()
+	{
+		return mining ? config.miningColour() : config.notMiningColour();
+	}
+
+	@Override
+	protected void shutDown() throws Exception
+	{
+		overlayManager.remove(mine);
+
+		activeDaeyaltEssence = null;
+		activeDaeyaltEssenceSpawnTick = -1;
+		mining = false;
+		lastMiningTick = -1;
+
+		clickboxFillColorMinable = null;
+		clickboxBorderColorMinable = null;
+		clickboxBorderHoverColorMinable = null;
+	}
+
+	@Subscribe
+	public void onGameStateChanged(GameStateChanged event)
+	{
+		var gameState = event.getGameState();
+		if (gameState != GameState.LOADING)
+			return;
+
+		activeDaeyaltEssence = null;
+		activeDaeyaltEssenceSpawnTick = -1;
+	}
+
+	@Subscribe
+	public void onGameObjectSpawned(GameObjectSpawned event)
+	{
+		var obj = event.getGameObject();
+
+		switch (obj.getId())
+		{
+			case ObjectID.DAEYALT_STONE_TOP_ACTIVE:
+				if (obj == activeDaeyaltEssence)
+					return;
+
+				if (activeDaeyaltEssenceSpawnTick > 0)
+				{
+					notifier.notify(config.notification(), "Daeyalt Essence Mine spawned");
+
+					if (config.ingameSound())
+					{
+						var volume = config.soundVolume();
+
+						if (config.soundFollowGameVolume())
+						{
+							client.playSoundEffect(config.soundId(), volume);
+						}
+						else
+						{
+							var prefs = client.getPreferences();
+							var prev = prefs.getSoundEffectVolume();
+							prefs.setSoundEffectVolume(volume);
+							client.playSoundEffect(config.soundId(), volume);
+							prefs.setSoundEffectVolume(prev);
+						}
+					}
+				}
+
+				activeDaeyaltEssenceSpawnTick = client.getTickCount();
+				activeDaeyaltEssence = obj;
+				break;
+			case ObjectID.DAEYALT_STONE_TOP:
+
+				break;
+		}
+	}
+
+	@Subscribe
+	public void onGameObjectDespawned(GameObjectDespawned event)
+	{
+		var object = event.getGameObject();
+		if (object.getId() == ObjectID.DAEYALT_STONE_TOP_ACTIVE && object == activeDaeyaltEssence)
+			activeDaeyaltEssence = null;
+	}
+
+	@Subscribe
+	public void onGameTick(GameTick event)
+	{
+		var player = client.getLocalPlayer();
+		if (player == null)
+		{
+			inDaeyaltEssenceMine = false;
+			return;
+		}
+
+		var worldLocation = player.getWorldLocation();
+		if (worldLocation == null)
+		{
+			inDaeyaltEssenceMine = false;
+			return;
+		}
+
+		var region = worldLocation.getRegionID();
+		inDaeyaltEssenceMine = region == DAEYALT_ESSENCE_MINE_REGION_ID;
+
+		if (!inDaeyaltEssenceMine)
+		{
+			activeDaeyaltEssence = null;
+			activeDaeyaltEssenceSpawnTick = -1;
+			mining = false;
+			return;
+		}
+
+		var tick = client.getTickCount();
+		if (player.getAnimation() != -1 && nearActiveDaeyaltEssence(worldLocation))
+			lastMiningTick = tick;
+		mining = activeDaeyaltEssence != null && lastMiningTick >= 0 && tick - lastMiningTick <= MINING_GRACE_TICKS;
+	}
+
+	private boolean nearActiveDaeyaltEssence(WorldPoint playerLocation)
+	{
+		var obj = activeDaeyaltEssence;
+		if (obj == null)
+			return false;
+
+		var min = obj.getSceneMinLocation();
+		var max = obj.getSceneMaxLocation();
+		var sw = WorldPoint.fromScene(obj.getWorldView(), min.getX(), min.getY(), obj.getPlane());
+		var area = new WorldArea(sw, max.getX() - min.getX() + 1, max.getY() - min.getY() + 1);
+		return area.distanceTo(playerLocation) <= MINING_DISTANCE;
+	}
+
+	@Provides
+	BetterDaeyaltTimersConfig provideConfig(ConfigManager configManager)
+	{
+		return configManager.getConfig(BetterDaeyaltTimersConfig.class);
+	}
+
+	public boolean outsideDaeyaltEssenceMine()
+	{
+		return !inDaeyaltEssenceMine;
+	}
+}
